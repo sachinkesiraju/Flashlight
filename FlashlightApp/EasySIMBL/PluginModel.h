@@ -14,17 +14,25 @@
 @property (nonatomic) NSArray *examples;
 @property (nonatomic) BOOL installed;
 @property (nonatomic) BOOL installing;
-@property (nonatomic) NSURL *zipURL;
-@property (nonatomic) NSString *disabledPluginPath;
+@property (nonatomic,readonly) NSURL *zipURL;
 @property (nonatomic) NSArray *categories;
-@property (nonatomic) BOOL isAutomatorWorkflow;
+@property (nonatomic) BOOL isAutomatorWorkflow, isSearchPlugin, openPreferencesOnInstall;
 
 + (PluginModel *)fromJson:(NSDictionary *)json baseURL:(NSURL *)url;
-
-+ (NSArray *)mergeDuplicates:(NSArray *)models;
 
 @property (nonatomic,readonly) NSAttributedString *attributedString;
 
 - (NSArray *)allCategories;
+
+- (BOOL)hasOptions;
+- (void)presentOptionsInWindow:(NSWindow *)window;
+
++ (NSString *)pluginsDir;
+
++ (PluginModel *)installedPluginNamed:(NSString *)name;
+
+- (NSString *)path;
+
++ (NSInteger)versionForPluginAtPath:(NSString *)path;
 
 @end

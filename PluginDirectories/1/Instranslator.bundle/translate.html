@@ -1,9 +1,11 @@
 <html>
+<head>
 <style>
 
 body {
    padding: 0px;
    font-family: sans-serif;
+   color: ----color----;
 }
  .content-wrapper {
     width: 100%;
@@ -16,9 +18,13 @@ body {
     vertical-align: middle;
     display: table-cell;
  }
+ .dark-mode{
+ 	color:white;
+ }
 
 </style>
-
+</head>
+<body>
 <div class="content-wrapper">
     <h3 id="translation" > </h3>
 </div>
@@ -70,9 +76,16 @@ body {
         translation.replace(".", ".\n");
         return translation;
     }
-
+    
+    var resultText = null;
+    
     function plotDiv(text) {
+       resultText = text;
       document.getElementById("translation").innerText = text;
+    }
+    
+    function output() {
+       return resultText;
     }
 
 	 setTimeout(function() {
@@ -81,4 +94,5 @@ body {
 
 
 </script>
+</body>
 </html>

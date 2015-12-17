@@ -8,6 +8,9 @@
 
 #import "PluginModel.h"
 #import "ConvenienceCategories.h"
+#import "NSObject+InternationalizedValueForKey.h"
+#import "PrefEditorWindow.h"
+#import "PluginDirectoryAPI.h"
 
 @implementation PluginModel
 
@@ -19,49 +22,25 @@
     p.installed = self.installed;
     p.installing = self.installing;
     p.examples = self.examples;
-    p.disabledPluginPath = self.disabledPluginPath;
     p.categories = self.categories;
+    p.isAutomatorWorkflow = self.isAutomatorWorkflow;
+    p.isSearchPlugin = self.isSearchPlugin;
+    p.openPreferencesOnInstall = self.openPreferencesOnInstall;
     return p;
 }
 
 + (PluginModel *)fromJson:(NSDictionary *)json baseURL:(NSURL *)url {
     PluginModel *model = [PluginModel new];
     model.name = json[@"name"];
-    model.displayName = json[@"displayName"];
-    model.pluginDescription = json[@"description"];
-    model.examples = json[@"examples"];
+    model.displayName = [json internationalizedValueForKey:@"displayName"] ? : @"";
+    model.pluginDescription = [json internationalizedValueForKey:@"description"] ? : @"";
+    model.examples = [json internationalizedValueForKey:@"examples"];
     model.installed = NO;
-    model.zipURL = [NSURL URLWithString:json[@"zip_url"] relativeToURL:url];
     model.categories = json[@"categories"] ? : @[@"Unknown"];
     model.isAutomatorWorkflow = [json[@"isAutomatorWorkflow"] boolValue];
+    model.isSearchPlugin = [json[@"isSearchPlugin"] boolValue];
+    model.openPreferencesOnInstall = [json[@"openPreferencesOnInstall"] boolValue];
     return model;
-}
-
-+ (NSArray *)mergeDuplicates:(NSArray *)models {
-    NSMutableDictionary *pluginsByName = [NSMutableDictionary new];
-    for (PluginModel *p in models) {
-        if (pluginsByName[p.name]) {
-            pluginsByName[p.name] = [p mergeWith:pluginsByName[p.name]];
-        } else {
-            pluginsByName[p.name] = p;
-        }
-    }
-    return pluginsByName.allValues;
-}
-
-- (PluginModel *)mergeWith:(PluginModel *)other {
-    if (!self.installed && self.disabledPluginPath && other.zipURL) {
-        // self=a disabled plugin. other=a web plugin
-        other.disabledPluginPath = self.disabledPluginPath;
-        return other;
-    } else if (!other.installed && other.disabledPluginPath && self.zipURL) {
-        self.disabledPluginPath = other.disabledPluginPath;
-        return self;
-    } else if (self.installed) {
-        return self;
-    } else {
-        return other;
-    }
 }
 
 - (NSAttributedString *)attributedString {
@@ -100,6 +79,50 @@
         [cats addObject:@"Installed"];
     }
     return cats;
+}
+
++ (NSString *)pluginsDir {
+    return [NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES)[0] stringByAppendingPathComponent:@"FlashlightPlugins"];
+}
+
+- (NSString *)path {
+    return [[[[self class] pluginsDir] stringByAppendingPathComponent:self.name] stringByAppendingPathExtension:@"bundle"];
+}
+
+- (BOOL)hasOptions {
+    return [[NSFileManager defaultManager] fileExistsAtPath:[[self path] stringByAppendingPathComponent:@"options.json"]];
+}
+
+- (void)presentOptionsInWindow:(NSWindow *)window {
+    PrefEditorWindow *win = [[PrefEditorWindow alloc] initWithWindowNibName:@"PrefEditorWindow"];
+    win.plugin = self;
+    [window beginSheet:win.window completionHandler:^(NSModalResponse returnCode) {
+        [win save]; // it's important that we hold a reference to win
+    }];
+}
+
++ (PluginModel *)installedPluginNamed:(NSString *)name {
+    NSString *infoPath = [[[[[self class] pluginsDir] stringByAppendingPathComponent:name] stringByAppendingPathExtension:@"bundle"] stringByAppendingPathComponent:@"info.json"];
+    NSData *infoData = [NSData dataWithContentsOfFile:infoPath];
+    if (infoPath) {
+        return [PluginModel fromJson:[NSJSONSerialization JSONObjectWithData:infoData options:0 error:nil] baseURL:nil];
+    } else {
+        return nil;
+    }
+}
+
++ (NSInteger)versionForPluginAtPath:(NSString *)path {
+    for (NSString *file in [[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil]) {
+        if ([file.pathExtension isEqualToString:@"version"]) {
+            return file.stringByDeletingPathExtension.integerValue;
+        }
+    }
+    return 1; // fallback to version 1
+}
+
+- (NSURL *)zipURL {
+    NSString *u = [NSString stringWithFormat:@"%@/plugin/%@/latest.zip", [PluginDirectoryAPI APIRoot], self.name];
+    return [NSURL URLWithString:u];
 }
 
 @end

@@ -1,0 +1,20 @@
+{
+    "options": [
+        {
+            "text": "Host",
+            "key": "host",
+            "type": "text"
+        },
+        {
+            "text": "Username",
+            "key": "user",
+            "type": "text"
+        },
+        {
+            "text": "Password",
+            "key": "password",
+            "type": "text",
+	    "password": true
+        }
+    ]
+}

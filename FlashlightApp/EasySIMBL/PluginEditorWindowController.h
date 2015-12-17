@@ -8,10 +8,10 @@
 
 #import <Cocoa/Cocoa.h>
 
-NSString * const PluginDidChangeOnDiskNotification;
-
 @interface PluginEditorWindowController : NSWindowController
 
 @property (nonatomic) NSString *pluginPath;
+
++ (NSMutableSet *)globalOpenWindows;
 
 @end

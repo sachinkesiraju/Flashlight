@@ -7,8 +7,7 @@
 //
 
 #import "PluginEditorWindowController.h"
-
-NSString * const PluginDidChangeOnDiskNotification = @"PluginDidChangeOnDiskNotification";
+#import <utime.h>
 
 @interface PluginEditorWindowController () <NSTextViewDelegate, NSTextFieldDelegate>
 
@@ -16,6 +15,9 @@ NSString * const PluginDidChangeOnDiskNotification = @"PluginDidChangeOnDiskNoti
 @property (nonatomic,assign) IBOutlet NSTextView *examples;
 @property (nonatomic) NSTimer *saveTimer;
 @property (nonatomic) BOOL pendingSave;
+
+@property (nonatomic) IBOutlet NSTextField *titleLabel, *descriptionLabel, *workflowLabel, *examplesLabel, *examplesInfoText;
+@property (nonatomic) IBOutlet NSButton *editWorkflowButton, *deletePluginButton;
 
 @end
 
@@ -35,11 +37,10 @@ NSString * const PluginDidChangeOnDiskNotification = @"PluginDidChangeOnDiskNoti
     json[@"examples"] = [self.examples.string componentsSeparatedByString:@"\n"];
     [[NSJSONSerialization dataWithJSONObject:json options:0 error:nil] writeToFile:[self.pluginPath stringByAppendingPathComponent:@"info.json"] atomically:YES];
     [self.examples.string writeToFile:[self.pluginPath stringByAppendingPathComponent:@"examples.txt"] atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    utime(self.pluginPath.stringByDeletingLastPathComponent.UTF8String, NULL);
     
     self.saveTimer = nil;
     self.pendingSave = NO;
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:PluginDidChangeOnDiskNotification object:self];
 }
 #pragma mark Actions
 - (IBAction)edited:(id)sender {
@@ -58,7 +59,6 @@ NSString * const PluginDidChangeOnDiskNotification = @"PluginDidChangeOnDiskNoti
     self.pendingSave = NO;
     [self.saveTimer invalidate];
     self.saveTimer = nil;
-    [[NSNotificationCenter defaultCenter] postNotificationName:PluginDidChangeOnDiskNotification object:self];
     [self close];
 }
 #pragma mark NSTextViewDelegate
@@ -82,6 +82,16 @@ NSString * const PluginDidChangeOnDiskNotification = @"PluginDidChangeOnDiskNoti
     self.nameField.delegate = self;
     self.descriptionField.delegate = self;
     self.examples.delegate = self;
+    
+    // set localized strings:
+    [self.editWorkflowButton setTitle:NSLocalizedString(@"Edit Workflow", @"")];
+    self.titleLabel.stringValue = NSLocalizedString(@"Title:", @"");
+    self.descriptionLabel.stringValue = NSLocalizedString(@"Description:", @"");
+    self.workflowLabel.stringValue = NSLocalizedString(@"Automator workflow:", @"");
+    self.examplesLabel.stringValue = NSLocalizedString(@"Usage examples:", @"");
+    self.examplesInfoText.stringValue = NSLocalizedString(@"Your plugin will be selected when you search Spotlight for anything that's close to one of these examples.", @"");
+    self.deletePluginButton.stringValue = NSLocalizedString(@"Delete Plugin", @"");
+    self.window.title = NSLocalizedString(@"Edit Plugin", @"");
 }
 - (void)setPendingSave:(BOOL)pendingSave {
     _pendingSave = pendingSave;
